@@ -25,7 +25,8 @@ export function useRetryReceipt() {
         receipt_attempt_count: (payment.receipt_attempt_count || 0) + 1,
       });
 
-      // Send digital invoice again
+      // Send digital invoice again (stub — logs to SyncLog on backend;
+      // wire to real email/Telegram service when ready)
       await base44.functions.invoke('sendDigitalInvoice', {
         payment_id: paymentId,
         patient_id: payment.patient_id,
