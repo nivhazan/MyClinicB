@@ -7,39 +7,224 @@ datasource db {
   url      = "file:./dev.db"
 }
 
+// ──────────────────────────────────────────────
+// Patient (מטופל)
+// ──────────────────────────────────────────────
 model Patient {
-  id           String   @id @default(cuid())
-  fullName     String
-  billingModel String?
-  sessionPrice Float?
-  appointments Appointment[]
+  id             String   @id @default(cuid())
+  fullName       String
+  billingModel   String?  // per_session | monthly_aggregate
+  sessionPrice   Float?
+  phone          String?
+  email          String?
+  activityStatus String   @default("active") // active | inactive
+  notes          String?
+  createdAt      DateTime @default(now())
+
+  appointments      Appointment[]
+  payments          Payment[]
+  treatmentSessions TreatmentSession[]
+  patientFiles      PatientFile[]
+  tasks             Task[]
 }
 
+// ──────────────────────────────────────────────
+// Appointment (תור / טיפול)
+// ──────────────────────────────────────────────
 model Appointment {
   id          String   @id @default(cuid())
   patientId   String
   patient     Patient  @relation(fields: [patientId], references: [id])
   patientName String
-  date        DateTime
-  time        String
-  duration    Int
-  status      String
-  type        String
-}
-
-model Payment {
-  id           String   @id @default(cuid())
-  amount       Float
-  status       String
+  date        String   // YYYY-MM-DD (stored as string for easy frontend compat)
+  time        String   // HH:mm
+  duration    Int      @default(45)
+  status      String   @default("מתוכנן") // מתוכנן | בוצע | בוטל | לא הגיע
+  type        String   @default("טיפול שוטף")
+  notes       String?
+  reminderSent Boolean @default(false)
   createdAt    DateTime @default(now())
-  paymentDate  DateTime @default(now())
-  appointment  Appointment? @relation(fields: [appointmentId], references: [id])
-  appointmentId String?
+
+  payments          Payment[]
+  treatmentSessions TreatmentSession[]
 }
 
+// ──────────────────────────────────────────────
+// Payment (תשלום)
+// per-session: sessionId set, billingMonth null
+// monthly:     billingMonth set, sessionId null
+// ──────────────────────────────────────────────
+model Payment {
+  id                  String    @id @default(cuid())
+  patientId           String
+  patient             Patient   @relation(fields: [patientId], references: [id])
+  patientName         String?
+  amount              Float
+  status              String    @default("paid") // always 'paid' in v1
+  paymentDate         String?   // YYYY-MM-DD
+  createdAt           DateTime  @default(now())
+
+  // Per-session payment link
+  sessionId           String?   @unique // appointment id — unique prevents duplicates
+  appointment         Appointment? @relation(fields: [sessionId], references: [id])
+
+  // Monthly payment
+  billingMonth        String?   // YYYY-MM format
+
+  // Receipt management
+  receiptStatus       String    @default("pending") // pending | sent | failed
+  receiptAttemptCount Int       @default(0)
+  receiptSentAt       DateTime?
+  receiptError        String?
+
+  notes               String?
+}
+
+// ──────────────────────────────────────────────
+// TreatmentSession (סיכום טיפול)
+// ──────────────────────────────────────────────
 model TreatmentSession {
   id            String   @id @default(cuid())
-  appointment   Appointment? @relation(fields: [appointmentId], references: [id])
+  patientId     String?
+  patient       Patient? @relation(fields: [patientId], references: [id])
   appointmentId String?
+  appointment   Appointment? @relation(fields: [appointmentId], references: [id])
+  sessionDate   String?  // YYYY-MM-DD
   notes         String?
+  summary       String?
+  createdAt     DateTime @default(now())
+}
+
+// ──────────────────────────────────────────────
+// Expense (הוצאה)
+// ──────────────────────────────────────────────
+model Expense {
+  id          String   @id @default(cuid())
+  date        String   // YYYY-MM-DD
+  amount      Float
+  category    String
+  vendor      String?
+  notes       String?
+  receiptUrl  String?
+  createdAt   DateTime @default(now())
+}
+
+// ──────────────────────────────────────────────
+// Attachment / Document (מסמך מצורף)
+// ──────────────────────────────────────────────
+model Attachment {
+  id         String   @id @default(cuid())
+  ownerType  String   // payment | expense | patient | session | other
+  ownerId    String
+  fileType   String   // pdf | jpg | png | webp
+  url        String
+  fileName   String?
+  createdAt  DateTime @default(now())
+}
+
+// ──────────────────────────────────────────────
+// PatientFile (קבצי מטופל)
+// ──────────────────────────────────────────────
+model PatientFile {
+  id          String   @id @default(cuid())
+  patientId   String
+  patient     Patient  @relation(fields: [patientId], references: [id])
+  fileName    String
+  fileType    String?
+  url         String?
+  uploadDate  String?  // YYYY-MM-DD
+  notes       String?
+  createdAt   DateTime @default(now())
+}
+
+// ──────────────────────────────────────────────
+// Task (משימה)
+// ──────────────────────────────────────────────
+model Task {
+  id          String   @id @default(cuid())
+  patientId   String?
+  patient     Patient? @relation(fields: [patientId], references: [id])
+  title       String
+  description String?
+  status      String   @default("pending") // pending | done
+  dueDate     String?  // YYYY-MM-DD
+  createdAt   DateTime @default(now())
+}
+
+// ──────────────────────────────────────────────
+// Activity (פעילות)
+// ──────────────────────────────────────────────
+model Activity {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  duration    Int?
+  price       Float?
+  createdAt   DateTime @default(now())
+}
+
+// ──────────────────────────────────────────────
+// Invoice (חשבונית)
+// ──────────────────────────────────────────────
+model Invoice {
+  id          String   @id @default(cuid())
+  patientId   String?
+  patientName String?
+  amount      Float
+  issueDate   String?  // YYYY-MM-DD
+  status      String   @default("draft") // draft | sent | paid
+  notes       String?
+  createdAt   DateTime @default(now())
+}
+
+// ──────────────────────────────────────────────
+// ReminderSettings (הגדרות תזכורות / טלגרם)
+// ──────────────────────────────────────────────
+model ReminderSettings {
+  id              String  @id @default(cuid())
+  telegramToken   String?
+  telegramChatId  String?
+  reminderEnabled Boolean @default(false)
+  reminderTemplate String?
+  dailyUpdateEnabled Boolean @default(false)
+  createdAt       DateTime @default(now())
+}
+
+// ──────────────────────────────────────────────
+// ClinicClosure (סגירת קליניקה / חופשות)
+// ──────────────────────────────────────────────
+model ClinicClosure {
+  id        String   @id @default(cuid())
+  startDate String   // YYYY-MM-DD
+  endDate   String   // YYYY-MM-DD
+  reason    String?
+  createdAt DateTime @default(now())
+}
+
+// ──────────────────────────────────────────────
+// DigitalInvoiceSettings (הגדרות חשבונית דיגיטלית)
+// ──────────────────────────────────────────────
+model DigitalInvoiceSettings {
+  id              String  @id @default(cuid())
+  businessName    String?
+  businessId      String?
+  businessAddress String?
+  businessPhone   String?
+  businessEmail   String?
+  logoUrl         String?
+  footerText      String?
+  createdAt       DateTime @default(now())
+}
+
+// ──────────────────────────────────────────────
+// SyncLog (לוג סנכרון)
+// ──────────────────────────────────────────────
+model SyncLog {
+  id          String   @id @default(cuid())
+  action      String
+  entityType  String?
+  entityId    String?
+  details     String?
+  status      String   @default("success") // success | error
+  createdAt   DateTime @default(now())
 }
