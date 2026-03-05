@@ -1,0 +1,20 @@
+{
+  "name": "server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --loader ts-node/esm index.js",
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "prisma": "^4.18.0",
+    "@prisma/client": "^4.18.0",
+    "body-parser": "^1.20.2"
+  },
+  "devDependencies": {
+    "ts-node": "^10.9.1"
+  }
+}
