@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "postToolUse": [
+      {
+        "event": "Edit",
+        "filePattern": "**/schema.prisma",
+        "command": "cd server && npx prisma validate 2>&1"
+      },
+      {
+        "event": "Write",
+        "filePattern": "**/schema.prisma",
+        "command": "cd server && npx prisma validate 2>&1"
+      }
+    ]
+  }
+}
