@@ -74,15 +74,8 @@ export default function Payments() {
   };
 
   const handleQuickPayment = (paymentData) => {
-    if (paymentData.session_id) {
-      const existingPayment = payments.find(p => p.session_id === paymentData.session_id);
-      if (existingPayment) {
-        toast.error('כבר קיים תשלום לטיפול זה');
-        setQuickPaymentDebt(null);
-        return;
-      }
-    }
-    createMutation.mutate({ ...paymentData, receipt_status: 'pending', receipt_attempt_count: 0 });
+    // Backend handles duplicate check, future appointment block, etc.
+    createMutation.mutate(paymentData);
   };
 
   const handleRetryReceipt = (paymentId) => {

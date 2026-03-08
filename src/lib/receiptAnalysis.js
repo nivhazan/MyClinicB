@@ -1,9 +1,4 @@
-import Anthropic from '@anthropic-ai/sdk';
-
-const client = new Anthropic({
-  apiKey: import.meta.env.VITE_ANTHROPIC_API_KEY,
-  dangerouslyAllowBrowser: true,
-});
+const API_URL = import.meta.env?.VITE_API_URL || 'http://localhost:4000';
 
 const VALID_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
 
@@ -17,7 +12,8 @@ function fileToBase64(file) {
 }
 
 /**
- * Analyzes a receipt image using Claude AI vision and returns structured data.
+ * Analyzes a receipt image using Claude AI vision via the backend endpoint.
+ * The API key is kept server-side for security.
  * @param {File} file - The receipt image file
  * @returns {Promise<{amount, vendor, date, description, category}>}
  */
@@ -28,40 +24,19 @@ export async function analyzeReceiptWithAI(file) {
 
   const base64Image = await fileToBase64(file);
 
-  const message = await client.messages.create({
-    model: 'claude-haiku-4-5-20251001',
-    max_tokens: 512,
-    messages: [
-      {
-        role: 'user',
-        content: [
-          {
-            type: 'image',
-            source: {
-              type: 'base64',
-              media_type: file.type,
-              data: base64Image,
-            },
-          },
-          {
-            type: 'text',
-            text: `אתה מנתח קבלות. חלץ את המידע הבא מהקבלה והחזר JSON בלבד, ללא טקסט נוסף:
-{
-  "amount": <סכום כמספר בלבד ללא סימן מטבע>,
-  "vendor": "<שם העסק>",
-  "date": "<תאריך בפורמט YYYY-MM-DD>",
-  "description": "<תיאור קצר של מה נקנה>",
-  "category": "<אחת בדיוק מתוך: ציוד קליני, חומרי משרד, שכר דירה, חשמל ומים, אינטרנט וטלפון, שיווק ופרסום, השתלמויות, ביטוח, אחזקה ותיקונים, אחר>"
-}
-אם לא ניתן לזהות שדה מסוים, החזר null עבורו.`,
-          },
-        ],
-      },
-    ],
+  const res = await fetch(`${API_URL}/api/analyze-receipt`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      image: base64Image,
+      mediaType: file.type,
+    }),
   });
 
-  const text = message.content[0].text.trim();
-  const jsonMatch = text.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) throw new Error('לא ניתן לנתח את תשובת ה-AI');
-  return JSON.parse(jsonMatch[0]);
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.error || 'שגיאה בניתוח הקבלה');
+  }
+
+  return res.json();
 }
