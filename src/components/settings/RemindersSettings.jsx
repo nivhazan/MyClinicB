@@ -22,6 +22,7 @@ export default function RemindersSettings() {
         reminder_template: "שלום {patient_name},\n\nמזכירים לך על התור שלך מחר ב-{time}.\n\nנשמח לראותך!\nהקליניקה",
         auto_send_enabled: false,
         hours_before: 24,
+        daily_update_enabled: false,
         admin_daily_summary: true,
         admin_weekly_summary: true,
         admin_phone: '',

@@ -45,6 +45,10 @@ export default function Patients() {
       queryClient.invalidateQueries({ queryKey: ['appointments'] });
       setShowForm(false);
       setEditingPatient(null);
+      toast.success('מטופל נוסף בהצלחה');
+    },
+    onError: (err) => {
+      toast.error(err.message || 'שגיאה בשמירת מטופל');
     },
   });
 
@@ -68,6 +72,10 @@ export default function Patients() {
       setShowForm(false);
       setEditingPatient(null);
       setSelectedPatient(null);
+      toast.success('מטופל עודכן בהצלחה');
+    },
+    onError: (err) => {
+      toast.error(err.message || 'שגיאה בעדכון מטופל');
     },
   });
 

@@ -11,15 +11,29 @@ datasource db {
 // Patient (מטופל)
 // ──────────────────────────────────────────────
 model Patient {
-  id             String   @id @default(cuid())
-  fullName       String
-  billingModel   String?  // per_session | monthly_aggregate
-  sessionPrice   Float?
-  phone          String?
-  email          String?
-  activityStatus String   @default("active") // active | inactive
-  notes          String?
-  createdAt      DateTime @default(now())
+  id                String   @id @default(cuid())
+  fullName          String
+  idNumber          String?
+  dateOfBirth       String?  // YYYY-MM-DD
+  phone             String?
+  parentPhone       String?
+  email             String?
+  address           String?
+  diagnosis         String?
+  medicalBackground String?
+  referralSource    String?
+  emergencyContact  String?
+  emergencyPhone    String?
+  billingModel      String?  // per_session | monthly_aggregate
+  sessionPrice      Float?
+  activityStatus    String   @default("active") // active | inactive
+  inactiveReason    String?  // completed | paused | dropped | financial | other
+  inactiveNote      String?
+  regularDay        String?  // Hebrew day name for weekly scheduling
+  regularTime       String?  // HH:mm
+  monthsAhead       Int?     @default(4)
+  notes             String?
+  createdAt         DateTime @default(now())
 
   appointments      Appointment[]
   payments          Payment[]
@@ -181,13 +195,23 @@ model Invoice {
 // ReminderSettings (הגדרות תזכורות / טלגרם)
 // ──────────────────────────────────────────────
 model ReminderSettings {
-  id              String  @id @default(cuid())
-  telegramToken   String?
-  telegramChatId  String?
-  reminderEnabled Boolean @default(false)
-  reminderTemplate String?
-  dailyUpdateEnabled Boolean @default(false)
-  createdAt       DateTime @default(now())
+  id                 String   @id @default(cuid())
+  telegramToken      String?
+  telegramChatId     String?
+  telegramEnabled    Boolean  @default(false)
+  telegramBotToken   String?
+  reminderEnabled    Boolean  @default(false)
+  reminderTemplate   String?
+  autoSendEnabled    Boolean  @default(false)
+  hoursBefore        Int      @default(24)
+  dailyUpdateEnabled Boolean  @default(false)
+  adminDailySummary  Boolean  @default(false)
+  adminWeeklySummary Boolean  @default(false)
+  adminPhone         String?
+  smsEnabled         Boolean  @default(false)
+  smsProvider        String?
+  smsApiKey          String?
+  createdAt          DateTime @default(now())
 }
 
 // ──────────────────────────────────────────────

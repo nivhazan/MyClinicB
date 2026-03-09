@@ -67,6 +67,18 @@ function mapDataKeys(data) {
     receipt_sent_at: 'receiptSentAt',
     receipt_error: 'receiptError',
     activity_status: 'activityStatus',
+    id_number: 'idNumber',
+    date_of_birth: 'dateOfBirth',
+    parent_phone: 'parentPhone',
+    medical_background: 'medicalBackground',
+    referral_source: 'referralSource',
+    emergency_contact: 'emergencyContact',
+    emergency_phone: 'emergencyPhone',
+    inactive_reason: 'inactiveReason',
+    inactive_note: 'inactiveNote',
+    regular_day: 'regularDay',
+    regular_time: 'regularTime',
+    months_ahead: 'monthsAhead',
     owner_type: 'ownerType',
     owner_id: 'ownerId',
     file_type: 'fileType',
@@ -82,6 +94,16 @@ function mapDataKeys(data) {
     reminder_enabled: 'reminderEnabled',
     reminder_template: 'reminderTemplate',
     daily_update_enabled: 'dailyUpdateEnabled',
+    auto_send_enabled: 'autoSendEnabled',
+    hours_before: 'hoursBefore',
+    admin_daily_summary: 'adminDailySummary',
+    admin_weekly_summary: 'adminWeeklySummary',
+    admin_phone: 'adminPhone',
+    telegram_enabled: 'telegramEnabled',
+    telegram_bot_token: 'telegramBotToken',
+    sms_enabled: 'smsEnabled',
+    sms_provider: 'smsProvider',
+    sms_api_key: 'smsApiKey',
     business_name: 'businessName',
     business_id: 'businessId',
     business_address: 'businessAddress',
@@ -95,10 +117,14 @@ function mapDataKeys(data) {
     entity_id: 'entityId',
     created_date: 'createdAt',
   };
+  // Generic snake_case → camelCase converter as fallback
+  function snakeToCamel(s) {
+    return s.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
+  }
   const mapped = {};
   for (const [k, v] of Object.entries(data)) {
-    if (k === 'id' || k === 'createdAt') continue; // skip auto-generated
-    mapped[keyMap[k] || k] = v;
+    if (k === 'id' || k === 'createdAt' || k === 'status') continue; // skip auto-generated and legacy fields
+    mapped[keyMap[k] || snakeToCamel(k)] = v;
   }
   return mapped;
 }
@@ -120,6 +146,18 @@ function mapRecordToSnake(record) {
     receiptSentAt: 'receipt_sent_at',
     receiptError: 'receipt_error',
     activityStatus: 'activity_status',
+    idNumber: 'id_number',
+    dateOfBirth: 'date_of_birth',
+    parentPhone: 'parent_phone',
+    medicalBackground: 'medical_background',
+    referralSource: 'referral_source',
+    emergencyContact: 'emergency_contact',
+    emergencyPhone: 'emergency_phone',
+    inactiveReason: 'inactive_reason',
+    inactiveNote: 'inactive_note',
+    regularDay: 'regular_day',
+    regularTime: 'regular_time',
+    monthsAhead: 'months_ahead',
     ownerType: 'owner_type',
     ownerId: 'owner_id',
     fileType: 'file_type',
@@ -135,6 +173,16 @@ function mapRecordToSnake(record) {
     reminderEnabled: 'reminder_enabled',
     reminderTemplate: 'reminder_template',
     dailyUpdateEnabled: 'daily_update_enabled',
+    autoSendEnabled: 'auto_send_enabled',
+    hoursBefore: 'hours_before',
+    adminDailySummary: 'admin_daily_summary',
+    adminWeeklySummary: 'admin_weekly_summary',
+    adminPhone: 'admin_phone',
+    telegramEnabled: 'telegram_enabled',
+    telegramBotToken: 'telegram_bot_token',
+    smsEnabled: 'sms_enabled',
+    smsProvider: 'sms_provider',
+    smsApiKey: 'sms_api_key',
     businessName: 'business_name',
     businessId: 'business_id',
     businessAddress: 'business_address',
