@@ -11,15 +11,30 @@ datasource db {
 // Patient (מטופל)
 // ──────────────────────────────────────────────
 model Patient {
-  id             String   @id @default(cuid())
-  fullName       String
-  billingModel   String?  // per_session | monthly_aggregate
-  sessionPrice   Float?
-  phone          String?
-  email          String?
-  activityStatus String   @default("active") // active | inactive
-  notes          String?
-  createdAt      DateTime @default(now())
+  id                String   @id @default(cuid())
+  fullName          String
+  idNumber          String?
+  dateOfBirth       String?
+  phone             String?
+  parentPhone       String?
+  email             String?
+  address           String?
+  diagnosis         String?
+  medicalBackground String?
+  referralSource    String?
+  emergencyContact  String?
+  emergencyPhone    String?
+  activityStatus    String   @default("active") // active | inactive
+  inactiveReason    String?
+  inactiveNote      String?
+  status            String?
+  regularDay        String?
+  regularTime       String?
+  monthsAhead       Int?
+  billingModel      String?  // per_session | monthly_aggregate
+  sessionPrice      Float?
+  notes             String?
+  createdAt         DateTime @default(now())
 
   appointments      Appointment[]
   payments          Payment[]
