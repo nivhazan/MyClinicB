@@ -117,10 +117,14 @@ function mapDataKeys(data) {
     entity_id: 'entityId',
     created_date: 'createdAt',
   };
+  // Generic snake_case → camelCase converter as fallback
+  function snakeToCamel(s) {
+    return s.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
+  }
   const mapped = {};
   for (const [k, v] of Object.entries(data)) {
     if (k === 'id' || k === 'createdAt' || k === 'status') continue; // skip auto-generated and legacy fields
-    mapped[keyMap[k] || k] = v;
+    mapped[keyMap[k] || snakeToCamel(k)] = v;
   }
   return mapped;
 }
