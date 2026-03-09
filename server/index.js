@@ -67,6 +67,18 @@ function mapDataKeys(data) {
     receipt_sent_at: 'receiptSentAt',
     receipt_error: 'receiptError',
     activity_status: 'activityStatus',
+    id_number: 'idNumber',
+    date_of_birth: 'dateOfBirth',
+    parent_phone: 'parentPhone',
+    medical_background: 'medicalBackground',
+    referral_source: 'referralSource',
+    emergency_contact: 'emergencyContact',
+    emergency_phone: 'emergencyPhone',
+    inactive_reason: 'inactiveReason',
+    inactive_note: 'inactiveNote',
+    regular_day: 'regularDay',
+    regular_time: 'regularTime',
+    months_ahead: 'monthsAhead',
     owner_type: 'ownerType',
     owner_id: 'ownerId',
     file_type: 'fileType',
@@ -97,7 +109,7 @@ function mapDataKeys(data) {
   };
   const mapped = {};
   for (const [k, v] of Object.entries(data)) {
-    if (k === 'id' || k === 'createdAt') continue; // skip auto-generated
+    if (k === 'id' || k === 'createdAt' || k === 'status') continue; // skip auto-generated and legacy fields
     mapped[keyMap[k] || k] = v;
   }
   return mapped;
@@ -120,6 +132,18 @@ function mapRecordToSnake(record) {
     receiptSentAt: 'receipt_sent_at',
     receiptError: 'receipt_error',
     activityStatus: 'activity_status',
+    idNumber: 'id_number',
+    dateOfBirth: 'date_of_birth',
+    parentPhone: 'parent_phone',
+    medicalBackground: 'medical_background',
+    referralSource: 'referral_source',
+    emergencyContact: 'emergency_contact',
+    emergencyPhone: 'emergency_phone',
+    inactiveReason: 'inactive_reason',
+    inactiveNote: 'inactive_note',
+    regularDay: 'regular_day',
+    regularTime: 'regular_time',
+    monthsAhead: 'months_ahead',
     ownerType: 'owner_type',
     ownerId: 'owner_id',
     fileType: 'file_type',
