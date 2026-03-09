@@ -195,13 +195,23 @@ model Invoice {
 // ReminderSettings (הגדרות תזכורות / טלגרם)
 // ──────────────────────────────────────────────
 model ReminderSettings {
-  id              String  @id @default(cuid())
-  telegramToken   String?
-  telegramChatId  String?
-  reminderEnabled Boolean @default(false)
-  reminderTemplate String?
-  dailyUpdateEnabled Boolean @default(false)
-  createdAt       DateTime @default(now())
+  id                 String   @id @default(cuid())
+  telegramToken      String?
+  telegramChatId     String?
+  telegramEnabled    Boolean  @default(false)
+  telegramBotToken   String?
+  reminderEnabled    Boolean  @default(false)
+  reminderTemplate   String?
+  autoSendEnabled    Boolean  @default(false)
+  hoursBefore        Int      @default(24)
+  dailyUpdateEnabled Boolean  @default(false)
+  adminDailySummary  Boolean  @default(false)
+  adminWeeklySummary Boolean  @default(false)
+  adminPhone         String?
+  smsEnabled         Boolean  @default(false)
+  smsProvider        String?
+  smsApiKey          String?
+  createdAt          DateTime @default(now())
 }
 
 // ──────────────────────────────────────────────
