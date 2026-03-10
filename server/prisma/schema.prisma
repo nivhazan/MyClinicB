@@ -114,14 +114,17 @@ model TreatmentSession {
 // Expense (הוצאה)
 // ──────────────────────────────────────────────
 model Expense {
-  id          String   @id @default(cuid())
-  date        String   // YYYY-MM-DD
-  amount      Float
-  category    String
-  vendor      String?
-  notes       String?
-  receiptUrl  String?
-  createdAt   DateTime @default(now())
+  id             String   @id @default(cuid())
+  date           String   // YYYY-MM-DD
+  amount         Float
+  category       String
+  vendor         String?
+  description    String?
+  notes          String?
+  paymentMethod  String?
+  taxDeductible  Boolean  @default(true)
+  receiptUrl     String?
+  createdAt      DateTime @default(now())
 }
 
 // ──────────────────────────────────────────────
@@ -196,13 +199,25 @@ model Invoice {
 // ReminderSettings (הגדרות תזכורות / טלגרם)
 // ──────────────────────────────────────────────
 model ReminderSettings {
-  id              String  @id @default(cuid())
-  telegramToken   String?
-  telegramChatId  String?
-  reminderEnabled Boolean @default(false)
-  reminderTemplate String?
-  dailyUpdateEnabled Boolean @default(false)
-  createdAt       DateTime @default(now())
+  id                     String   @id @default(cuid())
+  telegramBotToken       String?
+  telegramChatId         String?
+  telegramEnabled        Boolean  @default(false)
+  reminderEnabled        Boolean  @default(false)
+  reminderTemplate       String?
+  dailyUpdateEnabled     Boolean  @default(false)
+  dailyUpdateTime        String?  // HH:mm
+  hoursBefore            Int?     @default(24)
+  adminPhone             String?
+  adminDailySummary      Boolean  @default(true)
+  adminWeeklySummary     Boolean  @default(true)
+  weeklyScheduleEnabled  Boolean  @default(false)
+  weeklyScheduleDay      String?  // ראשון | שני | ...
+  weeklyScheduleTime     String?  // HH:mm
+  smsEnabled             Boolean  @default(false)
+  smsProvider            String?
+  smsApiKey              String?
+  createdAt              DateTime @default(now())
 }
 
 // ──────────────────────────────────────────────
@@ -213,6 +228,7 @@ model ClinicClosure {
   startDate String   // YYYY-MM-DD
   endDate   String   // YYYY-MM-DD
   reason    String?
+  type      String?  // vacation | holiday | other
   createdAt DateTime @default(now())
 }
 
@@ -220,14 +236,18 @@ model ClinicClosure {
 // DigitalInvoiceSettings (הגדרות חשבונית דיגיטלית)
 // ──────────────────────────────────────────────
 model DigitalInvoiceSettings {
-  id              String  @id @default(cuid())
+  id              String   @id @default(cuid())
+  apiKey          String?
   businessName    String?
   businessId      String?
-  businessAddress String?
-  businessPhone   String?
-  businessEmail   String?
+  address         String?
+  phone           String?
+  email           String?
   logoUrl         String?
   footerText      String?
+  reminderEnabled Boolean  @default(false)
+  includeVat      Boolean  @default(true)
+  vatRate         Float    @default(17)
   createdAt       DateTime @default(now())
 }
 
@@ -235,11 +255,21 @@ model DigitalInvoiceSettings {
 // SyncLog (לוג סנכרון)
 // ──────────────────────────────────────────────
 model SyncLog {
-  id          String   @id @default(cuid())
-  action      String
-  entityType  String?
-  entityId    String?
-  details     String?
-  status      String   @default("success") // success | error
-  createdAt   DateTime @default(now())
+  id           String   @id @default(cuid())
+  action       String
+  system       String?  // Telegram | SMS | Email | Google Calendar
+  eventType    String?  // reminder_sent | summary_sent | schedule_sent | appointment_sync
+  initiatedBy  String?  // manual | automatic
+  patientName  String?
+  entityType   String?
+  entityId     String?
+  externalId   String?
+  details      String?
+  errorMessage String?
+  requestData  String?  // JSON
+  responseData String?  // JSON
+  durationMs   Int?
+  createdBy    String?
+  status       String   @default("success") // success | failed
+  createdAt    DateTime @default(now())
 }

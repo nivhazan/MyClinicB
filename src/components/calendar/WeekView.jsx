@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { format, isSameDay, parseISO, addDays } from 'date-fns';
 import { he } from 'date-fns/locale';
-import { Plus, MessageSquare, Clock, GripVertical } from 'lucide-react';
+import { Plus, Clock, GripVertical, MessageSquare, DollarSign } from 'lucide-react';
 import { toast } from 'sonner';
 import { isAppointmentEnded } from '../shared/appointmentUtils';
 
@@ -230,13 +230,23 @@ export default function WeekView({
 
                               {/* Action links */}
                               <div className="flex gap-1 mt-1.5 border-t pt-1 border-gray-200">
-                                <button onClick={() => onAppointmentClick(apt)} className="flex-1 text-blue-600 hover:text-blue-800 text-center">פרטים</button>
-                                <button
-                                  onClick={() => setReminderModalData({ appointment: apt, patient })}
-                                  className="flex-1 text-green-600 hover:text-green-800 flex items-center justify-center gap-0.5"
-                                >
-                                  <MessageSquare className="w-3 h-3" />
-                                </button>
+                                <button onClick={() => onAppointmentClick(apt)} className="flex-1 text-blue-600 hover:text-blue-800 text-center text-xs">פרטים</button>
+                                {patient?.phone && (
+                                  <button
+                                    onClick={() => window.open(`https://wa.me/972${patient.phone.replace(/^0/, '')}`, '_blank')}
+                                    className="flex-1 flex justify-center text-green-600 hover:text-green-800"
+                                  >
+                                    <MessageSquare className="w-3 h-3" />
+                                  </button>
+                                )}
+                                {ended && apt.status !== 'בוטל' && apt.status !== 'לא הגיע' && !hasPayment && !isMonthly && onMarkAsPaid && (
+                                  <button
+                                    onClick={() => onMarkAsPaid(apt, patient)}
+                                    className="flex-1 flex justify-center text-green-600 hover:text-green-800"
+                                  >
+                                    <DollarSign className="w-3 h-3" />
+                                  </button>
+                                )}
                               </div>
                             </div>
                           )}

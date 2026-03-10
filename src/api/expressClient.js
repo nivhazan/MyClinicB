@@ -151,11 +151,12 @@ export const expressBase44 = {
           body: JSON.stringify(params),
         });
       },
-      async UploadFile(params) {
-        return request('/api/functions/uploadFile', {
-          method: 'POST',
-          body: JSON.stringify(params),
-        });
+      async UploadFile({ file }) {
+        const formData = new FormData();
+        formData.append('file', file);
+        const res = await fetch(`${API_URL}/api/upload`, { method: 'POST', body: formData });
+        if (!res.ok) { const b = await res.json().catch(() => ({})); throw new Error(b.error || `HTTP ${res.status}`); }
+        return res.json();
       },
       async GenerateImage(params) {
         return request('/api/functions/generateImage', {

@@ -4,8 +4,8 @@ import { Button } from '@/components/ui/button';
 import { format, parseISO, isAfter, isSameDay } from 'date-fns';
 import { he } from 'date-fns/locale';
 import { Check, CreditCard, XCircle, Trash2, RotateCcw, AlertCircle } from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
+
+
 import { toast } from 'sonner';
 import { isAppointmentEnded } from '../shared/appointmentUtils';
 
@@ -71,50 +71,20 @@ export default function WorkTable({
 
   const filteredData = filterAppointments(activeTab);
 
-  const getStatusBadge = (apt) => {
+  const getStatusInfo = (apt) => {
     const iEnded = isAppointmentEnded(apt);
-    if (!iEnded) return <Badge variant="outline">מתוכנן</Badge>;
-
-    if (apt.status === 'לא הגיע') return <Badge variant="outline" className="bg-gray-100">לא הגיע</Badge>;
-    if (apt.status === 'בוטל') return <Badge variant="outline" className="bg-gray-100">בוטל</Badge>;
+    if (!iEnded) return { label: 'מתוכנן', cls: 'bg-gray-100 text-gray-500' };
+    if (apt.status === 'לא הגיע') return { label: 'לא הגיע', cls: 'bg-gray-100 text-gray-500' };
+    if (apt.status === 'בוטל') return { label: 'בוטל', cls: 'bg-gray-100 text-gray-400' };
 
     const payment = getPaymentStatus(apt);
     const patient = patients.find(p => p.id === apt.patient_id);
 
-    if (patient?.billing_model === 'monthly_aggregate') {
-      return <Badge className="bg-yellow-100 text-yellow-800">חודשי</Badge>;
-    }
+    if (payment) return { label: `${payment.amount}₪`, cls: 'bg-green-100 text-green-700' };
+    if (patient?.billing_model === 'monthly_aggregate') return { label: 'חודשי', cls: 'bg-yellow-100 text-yellow-700' };
 
-    if (payment) {
-      return <Badge className="bg-green-100 text-green-800">שולם</Badge>;
-    }
-
-    return <Badge className="bg-red-100 text-red-800">חוב</Badge>;
-  };
-
-  const getFinancialBadge = (apt) => {
-    if (apt.status === 'לא הגיע' || apt.status === 'בוטל')
-      return <Badge variant="outline">—</Badge>;
-
-    const payment = getPaymentStatus(apt);
-    if (payment) {
-      return (
-        <Badge className="bg-green-100 text-green-800">
-          ✓ {payment.amount}₪
-        </Badge>
-      );
-    }
-
-    const patient = patients.find(p => p.id === apt.patient_id);
-    if (patient?.billing_model === 'monthly_aggregate') {
-      return <Badge className="bg-yellow-100 text-yellow-800">חודשי</Badge>;
-    }
-
-    return (
-      <Badge className="bg-red-100 text-red-800">
-        {patient?.session_price || 0}₪
-      </Badge>
-    );
+    const price = patient?.session_price || 0;
+    return { label: `${price}₪`, cls: 'bg-red-100 text-red-600' };
   };
 
   return (
@@ -123,21 +93,11 @@ export default function WorkTable({
         <CardTitle>ניהול טיפולים</CardTitle>
       </CardHeader>
       <CardContent>
-        <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="today">היום</TabsTrigger>
-            <TabsTrigger value="debts">חובות 🔴</TabsTrigger>
-            <TabsTrigger value="monthly">חודשי 🟡</TabsTrigger>
-            <TabsTrigger value="exceptions">חריגים ⚠️</TabsTrigger>
-          </TabsList>
-
-          {['today', 'debts', 'monthly', 'exceptions'].map((tab) => (
-            <TabsContent key={tab} value={tab} className="space-y-3">
-              {filteredData.length === 0 ? (
-                <div className="p-8 text-center text-gray-400">אין פריטים</div>
-              ) : (
-                <div className="space-y-2">
-                  {filteredData.map((apt) => {
+        <div className="space-y-2">
+          {filteredData.length === 0 ? (
+            <div className="p-8 text-center text-gray-400">אין פריטים</div>
+          ) : (
+            filteredData.map((apt) => {
                     const patient = patients.find(p => p.id === apt.patient_id);
                     const payment = getPaymentStatus(apt);
                     const isEnded = isAppointmentEnded(apt);
@@ -145,18 +105,10 @@ export default function WorkTable({
                     return (
                       <div
                         key={apt.id}
+                        dir="rtl"
                         className="flex items-center gap-1 md:gap-2 p-2 md:p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all overflow-x-auto"
                       >
-                        {/* Time */}
-                        <div className="flex flex-col gap-0.5 min-w-fit text-xs md:text-sm">
-                          <span className="text-[10px] md:text-xs text-gray-500">
-                            {format(parseISO(apt.date), 'd/MM')}
-                          </span>
-                          <span className="font-semibold">{apt.time}</span>
-                          {isEnded && <Check className="w-3 h-3 md:w-4 md:h-4 text-green-600 hidden sm:block" />}
-                        </div>
-
-                        {/* Patient */}
+                        {/* Patient — rightmost */}
                         <div className="flex-1 min-w-0">
                           <div className="font-medium text-sm md:text-base text-gray-800 truncate">{apt.patient_name}</div>
                           {patient?.notes && (
@@ -166,11 +118,18 @@ export default function WorkTable({
                           )}
                         </div>
 
-                        {/* Status */}
-                        <div className="min-w-fit text-xs md:text-sm">{getStatusBadge(apt)}</div>
+                        {/* Time */}
+                        <div className="flex flex-col gap-0.5 min-w-fit text-xs md:text-sm">
+                          <span className="text-[10px] md:text-xs text-gray-500">
+                            {format(parseISO(apt.date), 'd/MM')}
+                          </span>
+                          <span className="font-semibold">{apt.time}</span>
+                        </div>
 
-                        {/* Financial */}
-                        <div className="min-w-fit text-xs md:text-sm">{getFinancialBadge(apt)}</div>
+                        {/* Status + Amount combined */}
+                        {(() => { const s = getStatusInfo(apt); return (
+                          <span className={`min-w-fit text-xs font-medium select-none px-2 py-0.5 rounded-full pointer-events-none ${s.cls}`}>{s.label}</span>
+                        ); })()}
 
                         {/* Quick Actions */}
                         <div className="flex gap-0.5 md:gap-1 flex-shrink-0">
@@ -241,12 +200,9 @@ export default function WorkTable({
                         </div>
                       </div>
                     );
-                  })}
-                </div>
-              )}
-            </TabsContent>
-          ))}
-        </Tabs>
+                  })
+          )}
+        </div>
       </CardContent>
     </Card>
   );

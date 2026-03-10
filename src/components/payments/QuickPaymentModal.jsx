@@ -4,9 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { X, DollarSign } from 'lucide-react';
-import { format, parseISO, isFuture } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { he } from 'date-fns/locale';
-import { isAppointmentEnded } from '../shared/appointmentUtils';
 
 export default function QuickPaymentModal({ appointment, patient, lastPayment, onSubmit, onCancel, prefill }) {
   const getDefaultAmount = () => {
@@ -30,11 +29,7 @@ export default function QuickPaymentModal({ appointment, patient, lastPayment, o
       alert('יש להזין סכום תשלום גדול מ-0');
       return;
     }
-    // appointment must have ended before allowing payment
-    if (appointment && !isAppointmentEnded(appointment)) {
-      alert('לא ניתן לרשום תשלום על תור שטרם הסתיים');
-      return;
-    }
+
     const submitData = {
       patient_id: appointment?.patient_id || prefill?.patient_id,
       patient_name: appointment?.patient_name || prefill?.patient_name,

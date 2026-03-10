@@ -1,12 +1,30 @@
+import 'dotenv/config';
+import dotenv from 'dotenv';
+dotenv.config({ override: true }); // ensure .env overrides any existing env vars
 import express from 'express';
 import cors from 'cors';
 import { PrismaClient } from '@prisma/client';
 import Anthropic from '@anthropic-ai/sdk';
+import multer from 'multer';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import fs from 'fs';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir);
+
+const storage = multer.diskStorage({
+  destination: uploadsDir,
+  filename: (_req, file, cb) => cb(null, `${Date.now()}-${file.originalname}`),
+});
+const upload = multer({ storage, limits: { fileSize: 20 * 1024 * 1024 } });
 
 const prisma = new PrismaClient();
 const app = express();
 app.use(cors());
-app.use(express.json({ limit: '10mb' })); // large limit for receipt images
+app.use('/uploads', express.static(uploadsDir));
+app.use(express.json({ limit: '20mb' })); // large limit for receipt images
 
 // ──────────────────────────────────────────────
 // Helper: wrap async route handlers for error handling
@@ -89,27 +107,49 @@ function mapDataKeys(data) {
     issue_date: 'issueDate',
     start_date: 'startDate',
     end_date: 'endDate',
-    telegram_token: 'telegramToken',
+    telegram_bot_token: 'telegramBotToken',
     telegram_chat_id: 'telegramChatId',
-    reminder_enabled: 'reminderEnabled',
+    telegram_enabled: 'telegramEnabled',
+    auto_send_enabled: 'reminderEnabled',
     reminder_template: 'reminderTemplate',
     daily_update_enabled: 'dailyUpdateEnabled',
+    hours_before: 'hoursBefore',
+    admin_phone: 'adminPhone',
+    admin_daily_summary: 'adminDailySummary',
+    admin_weekly_summary: 'adminWeeklySummary',
+    sms_enabled: 'smsEnabled',
+    sms_provider: 'smsProvider',
+    sms_api_key: 'smsApiKey',
+    weekly_schedule_enabled: 'weeklyScheduleEnabled',
+    weekly_schedule_day: 'weeklyScheduleDay',
+    weekly_schedule_time: 'weeklyScheduleTime',
+    daily_update_time: 'dailyUpdateTime',
     business_name: 'businessName',
     business_id: 'businessId',
-    business_address: 'businessAddress',
-    business_phone: 'businessPhone',
-    business_email: 'businessEmail',
+    api_key: 'apiKey',
+    include_vat: 'includeVat',
+    vat_rate: 'vatRate',
     logo_url: 'logoUrl',
     footer_text: 'footerText',
     receipt_url: 'receiptUrl',
+    payment_method: 'paymentMethod',
+    tax_deductible: 'taxDeductible',
     upload_date: 'uploadDate',
     entity_type: 'entityType',
     entity_id: 'entityId',
+    event_type: 'eventType',
+    initiated_by: 'initiatedBy',
+    external_id: 'externalId',
+    error_message: 'errorMessage',
+    request_data: 'requestData',
+    response_data: 'responseData',
+    duration_ms: 'durationMs',
+    created_by: 'createdBy',
     created_date: 'createdAt',
   };
   const mapped = {};
   for (const [k, v] of Object.entries(data)) {
-    if (k === 'id' || k === 'createdAt') continue; // skip auto-generated
+    if (k === 'id' || k === 'createdAt' || k === 'created_at') continue; // skip auto-generated
     mapped[keyMap[k] || k] = v;
   }
   return mapped;
@@ -154,22 +194,44 @@ function mapRecordToSnake(record) {
     issueDate: 'issue_date',
     startDate: 'start_date',
     endDate: 'end_date',
-    telegramToken: 'telegram_token',
+    telegramBotToken: 'telegram_bot_token',
     telegramChatId: 'telegram_chat_id',
-    reminderEnabled: 'reminder_enabled',
+    telegramEnabled: 'telegram_enabled',
+    reminderEnabled: 'auto_send_enabled',
     reminderTemplate: 'reminder_template',
     dailyUpdateEnabled: 'daily_update_enabled',
+    hoursBefore: 'hours_before',
+    adminPhone: 'admin_phone',
+    adminDailySummary: 'admin_daily_summary',
+    adminWeeklySummary: 'admin_weekly_summary',
+    smsEnabled: 'sms_enabled',
+    smsProvider: 'sms_provider',
+    smsApiKey: 'sms_api_key',
+    weeklyScheduleEnabled: 'weekly_schedule_enabled',
+    weeklyScheduleDay: 'weekly_schedule_day',
+    weeklyScheduleTime: 'weekly_schedule_time',
+    dailyUpdateTime: 'daily_update_time',
     businessName: 'business_name',
     businessId: 'business_id',
-    businessAddress: 'business_address',
-    businessPhone: 'business_phone',
-    businessEmail: 'business_email',
+    apiKey: 'api_key',
+    includeVat: 'include_vat',
+    vatRate: 'vat_rate',
     logoUrl: 'logo_url',
     footerText: 'footer_text',
     receiptUrl: 'receipt_url',
+    paymentMethod: 'payment_method',
+    taxDeductible: 'tax_deductible',
     uploadDate: 'upload_date',
     entityType: 'entity_type',
     entityId: 'entity_id',
+    eventType: 'event_type',
+    initiatedBy: 'initiated_by',
+    externalId: 'external_id',
+    errorMessage: 'error_message',
+    requestData: 'request_data',
+    responseData: 'response_data',
+    durationMs: 'duration_ms',
+    createdBy: 'created_by',
     createdAt: 'created_at',
   };
   const mapped = {};
@@ -225,8 +287,10 @@ function registerCrud(modelName, prismaModel, opts = {}) {
     if (!Array.isArray(items)) return res.status(400).json({ error: 'Expected array' });
     const results = [];
     for (const item of items) {
+      if (opts.beforeCreate) await opts.beforeCreate(item);
       const data = mapDataKeys(item);
       const record = await prismaModel.create({ data });
+      if (opts.afterCreate) await opts.afterCreate(record, item);
       results.push(mapRecordToSnake(record));
     }
     res.status(201).json(results);
@@ -308,21 +372,67 @@ registerCrud('sync-logs', prisma.syncLog);
 // Receipt AI Analysis endpoint (security fix)
 // Anthropic API key stays server-side only
 // ──────────────────────────────────────────────
-const VALID_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+const VALID_FILE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf'];
+
+// Repair JSON that contains unescaped " inside string values (e.g. Hebrew בע"מ)
+function repairJson(str) {
+  try { JSON.parse(str); return str; } catch (_) { /* fall through */ }
+
+  let result = '';
+  let inString = false;
+  let i = 0;
+  while (i < str.length) {
+    const ch = str[i];
+    const prevIsBs = i > 0 && str[i - 1] === '\\';
+    if (ch === '"' && !prevIsBs) {
+      if (!inString) {
+        inString = true;
+        result += ch;
+      } else {
+        // Look ahead past whitespace to decide if this closes the string
+        let j = i + 1;
+        while (j < str.length && ' \t\r\n'.includes(str[j])) j++;
+        const next = str[j];
+        if (next === ':' || next === ',' || next === '}' || next === ']' || j >= str.length) {
+          inString = false;
+          result += ch;
+        } else {
+          result += '\\"'; // embedded quote – escape it
+        }
+      }
+    } else {
+      result += ch;
+    }
+    i++;
+  }
+  return result;
+}
+
+// ── File upload endpoint ─────────────────────
+app.post('/api/upload', upload.single('file'), asyncHandler(async (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+  const fileUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
+  res.json({ file_url: fileUrl });
+}));
 
 app.post('/api/analyze-receipt', asyncHandler(async (req, res) => {
   const { image, mediaType } = req.body;
   if (!image || !mediaType) {
     return res.status(400).json({ error: 'Missing image or mediaType' });
   }
-  if (!VALID_IMAGE_TYPES.includes(mediaType)) {
-    return res.status(400).json({ error: 'סוג קובץ לא נתמך. נא להעלות JPG, PNG, GIF או WEBP' });
+  if (!VALID_FILE_TYPES.includes(mediaType)) {
+    return res.status(400).json({ error: 'סוג קובץ לא נתמך. נא להעלות JPG, PNG, GIF, WEBP או PDF' });
   }
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     return res.status(500).json({ error: 'ANTHROPIC_API_KEY not configured on server' });
   }
+
+  const isPdf = mediaType === 'application/pdf';
+  const contentBlock = isPdf
+    ? { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: image } }
+    : { type: 'image', source: { type: 'base64', media_type: mediaType, data: image } };
 
   const client = new Anthropic({ apiKey });
   const message = await client.messages.create({
@@ -332,10 +442,7 @@ app.post('/api/analyze-receipt', asyncHandler(async (req, res) => {
       {
         role: 'user',
         content: [
-          {
-            type: 'image',
-            source: { type: 'base64', media_type: mediaType, data: image },
-          },
+          contentBlock,
           {
             type: 'text',
             text: `אתה מנתח קבלות. חלץ את המידע הבא מהקבלה והחזר JSON בלבד, ללא טקסט נוסף:
@@ -354,11 +461,22 @@ app.post('/api/analyze-receipt', asyncHandler(async (req, res) => {
   });
 
   const text = message.content[0].text.trim();
+  // debug: console.log('[analyze-receipt] AI raw response:', text.slice(0, 300));
   const jsonMatch = text.match(/\{[\s\S]*\}/);
   if (!jsonMatch) {
     return res.status(422).json({ error: 'לא ניתן לנתח את תשובת ה-AI' });
   }
-  res.json(JSON.parse(jsonMatch[0]));
+  let parsed;
+  try {
+    const cleaned = jsonMatch[0]
+      .replace(/\/\/.*$/gm, '')
+      .replace(/"amount"\s*:\s*([\d,]+)/, (_, n) => `"amount": ${n.replace(/,/g, '')}`);
+    parsed = JSON.parse(repairJson(cleaned));
+  } catch (e) {
+    // debug: console.error('[analyze-receipt] JSON parse error:', e.message);
+    return res.status(422).json({ error: 'תשובת ה-AI לא בפורמט תקין' });
+  }
+  res.json(parsed);
 }));
 
 // ──────────────────────────────────────────────
@@ -367,11 +485,149 @@ app.post('/api/analyze-receipt', asyncHandler(async (req, res) => {
 app.post('/api/functions/:name', asyncHandler(async (req, res) => {
   const { name } = req.params;
 
-  // For now, log the function invocation and return ok
-  // In production, wire these to actual Telegram/email services
+  // ── sendTelegramMessage ──────────────────────
+  if (name === 'sendTelegramMessage') {
+    const { chat_id, message, parse_mode } = req.body;
+    const settings = await prisma.reminderSettings.findFirst();
+    const token = settings?.telegramBotToken;
+
+    if (!token) {
+      return res.json({ data: { success: false, error: 'Bot token לא מוגדר בהגדרות' } });
+    }
+    if (!chat_id) {
+      return res.json({ data: { success: false, error: 'Chat ID חסר' } });
+    }
+
+    const tgRes = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id, text: message, parse_mode: parse_mode || 'HTML' }),
+    });
+    const tgData = await tgRes.json();
+
+    await prisma.syncLog.create({
+      data: {
+        action: 'function:sendTelegramMessage',
+        system: 'Telegram',
+        eventType: 'message_sent',
+        initiatedBy: 'manual',
+        details: message,
+        status: tgData.ok ? 'success' : 'failed',
+        errorMessage: tgData.ok ? null : tgData.description,
+      },
+    });
+
+    return res.json({ data: { success: tgData.ok, error: tgData.description } });
+  }
+
+  // ── sendReminder ─────────────────────────────
+  if (name === 'sendReminder') {
+    const settings = await prisma.reminderSettings.findFirst();
+    if (!settings?.telegramEnabled || !settings?.telegramBotToken || !settings?.telegramChatId) {
+      return res.json({ data: { success: false, message: 'Telegram לא מוגדר או מופעל' } });
+    }
+
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowStr = tomorrow.toISOString().split('T')[0];
+
+    const appointments = await prisma.appointment.findMany({
+      where: { date: tomorrowStr, status: { not: 'בוטל' } },
+      orderBy: { time: 'asc' },
+    });
+
+    if (appointments.length === 0) {
+      return res.json({ data: { success: true, sent: 0, message: 'אין תורים מחר לשליחת תזכורות' } });
+    }
+
+    let sent = 0;
+    const template = settings.reminderTemplate || 'שלום {patient_name}, תזכורת לתור מחר ב-{time}.';
+    for (const appt of appointments) {
+      const msg = template
+        .replace('{patient_name}', appt.patientName || '')
+        .replace('{time}', appt.time || '')
+        .replace('{date}', appt.date || '')
+        .replace('{type}', appt.type || 'טיפול');
+
+      const tgRes = await fetch(`https://api.telegram.org/bot${settings.telegramBotToken}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: settings.telegramChatId, text: msg, parse_mode: 'HTML' }),
+      });
+      const tgData = await tgRes.json();
+      if (tgData.ok) sent++;
+
+      await prisma.syncLog.create({
+        data: {
+          action: 'function:sendReminder',
+          system: 'Telegram',
+          eventType: 'reminder_sent',
+          initiatedBy: 'manual',
+          patientName: appt.patientName,
+          details: msg,
+          status: tgData.ok ? 'success' : 'failed',
+          errorMessage: tgData.ok ? null : tgData.description,
+        },
+      });
+    }
+
+    return res.json({ data: { success: true, sent, message: `נשלחו ${sent} תזכורות` } });
+  }
+
+  // ── sendDailyUpdate ──────────────────────────
+  if (name === 'sendDailyUpdate') {
+    const settings = await prisma.reminderSettings.findFirst();
+    if (!settings?.telegramEnabled || !settings?.telegramBotToken || !settings?.telegramChatId) {
+      return res.json({ data: { success: false, message: 'Telegram לא מוגדר או מופעל' } });
+    }
+
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowStr = tomorrow.toISOString().split('T')[0];
+    const tomorrowDisplay = tomorrow.toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' });
+
+    const appointments = await prisma.appointment.findMany({
+      where: { date: tomorrowStr, status: { not: 'בוטל' } },
+      orderBy: { time: 'asc' },
+    });
+
+    let msg = `📅 <b>לוז מחר - ${tomorrowDisplay}</b>\n\n`;
+    if (appointments.length === 0) {
+      msg += 'אין תורים מתוכננים מחר.';
+    } else {
+      appointments.forEach((a, i) => {
+        msg += `${i + 1}. ${a.time || ''} - ${a.patientName || ''} (${a.type || 'טיפול'})\n`;
+      });
+      msg += `\n<b>סה"כ: ${appointments.length} תורים</b>`;
+    }
+
+    const tgRes = await fetch(`https://api.telegram.org/bot${settings.telegramBotToken}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: settings.telegramChatId, text: msg, parse_mode: 'HTML' }),
+    });
+    const tgData = await tgRes.json();
+
+    await prisma.syncLog.create({
+      data: {
+        action: 'function:sendDailyUpdate',
+        system: 'Telegram',
+        eventType: 'summary_sent',
+        initiatedBy: 'manual',
+        details: msg,
+        status: tgData.ok ? 'success' : 'failed',
+        errorMessage: tgData.ok ? null : tgData.description,
+      },
+    });
+
+    return res.json({ data: { success: tgData.ok, message: tgData.ok ? 'עדכון יומי נשלח' : tgData.description } });
+  }
+
+  // ── Default: log and return ok ───────────────
   await prisma.syncLog.create({
     data: {
       action: `function:${name}`,
+      initiatedBy: 'manual',
       details: JSON.stringify(req.body),
       status: 'success',
     },
@@ -395,6 +651,6 @@ app.use((err, req, res, _next) => {
 
 // ──────────────────────────────────────────────
 const port = process.env.PORT || 4000;
-app.listen(port, () => {
+app.listen(port, '0.0.0.0', () => {
   console.log(`Backend API listening on http://localhost:${port}`);
 });

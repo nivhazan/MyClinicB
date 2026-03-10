@@ -14,22 +14,22 @@ export default function CalendarSync() {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4 p-4 sm:p-6">
-        <Alert className="bg-green-50 border-green-200">
-          <CheckCircle2 className="w-4 h-4 text-green-600" />
-          <AlertTitle className="text-green-800">מחובר לגוגל קלנדר</AlertTitle>
-          <AlertDescription className="text-green-700">
-            תורים חדשים מסתנכרנים אוטומטית לגוגל קלנדר שלך
+        <Alert className="bg-yellow-50 border-yellow-200">
+          <AlertCircle className="w-4 h-4 text-yellow-600" />
+          <AlertTitle className="text-yellow-800">סנכרון לוח שנה — בפיתוח</AlertTitle>
+          <AlertDescription className="text-yellow-700">
+            פיצ'ר זה עדיין לא מופעל. בקרוב תוכל לסנכרן תורים עם לוחות שנה חיצוניים.
           </AlertDescription>
         </Alert>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="border-2 border-green-200 bg-green-50 rounded-lg p-4 text-center">
+          <div className="border rounded-lg p-4 text-center opacity-50">
             <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
               <CheckCircle2 className="w-6 h-6 text-green-600" />
             </div>
             <h3 className="font-semibold mb-2">Google Calendar</h3>
-            <Button disabled variant="outline" size="sm" className="bg-white">
-              מחובר ✓
+            <Button disabled variant="outline" size="sm">
+              בקרוב
             </Button>
           </div>
 

@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { X, Save } from 'lucide-react';
 
-export default function PatientForm({ patient, onSubmit, onCancel }) {
+export default function PatientForm({ patient, onSubmit, onCancel, overlayZClass = 'z-50' }) {
   const [formData, setFormData] = useState(() => {
     if (patient) {
       // Existing patient - migrate old status if needed
@@ -84,7 +84,7 @@ export default function PatientForm({ patient, onSubmit, onCancel }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 overflow-y-auto">
+    <div className={`fixed inset-0 bg-black/50 backdrop-blur-sm ${overlayZClass} overflow-y-auto`}>
       <div className="min-h-screen py-4 px-2 md:p-8">
         <Card className="w-full max-w-4xl mx-auto shadow-2xl border-0">
           <CardHeader className="border-b bg-gradient-to-r from-blue-50 to-purple-50 p-4 md:p-6">

@@ -5,6 +5,9 @@ import path from 'path'
 // https://vite.dev/config/
 export default defineConfig({
   logLevel: 'error',
+  server: {
+    host: true,
+  },
   plugins: [
     react(),
   ],

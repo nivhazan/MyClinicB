@@ -6,9 +6,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { X, Save } from 'lucide-react';
+import { X, Save, UserPlus } from 'lucide-react';
+import PatientForm from '@/components/patients/PatientForm';
 
-export default function AppointmentForm({ appointment, patients, selectedDate, existingAppointments = [], onSubmit, onCancel }) {
+export default function AppointmentForm({ appointment, patients, selectedDate, existingAppointments = [], onSubmit, onCancel, onPatientCreated }) {
+  const [showNewPatient, setShowNewPatient] = useState(false);
   const [formData, setFormData] = useState(() => {
     const defaults = {
       patient_id: '',
@@ -124,18 +126,13 @@ export default function AppointmentForm({ appointment, patients, selectedDate, e
                     ))}
                   </SelectContent>
                 </Select>
-                <Button 
-                 type="button" 
-                 variant="outline"
-                 onClick={async () => {
-                   const name = prompt('שם המטופל החדש:');
-                   if (name) {
-                     const newPatient = await base44.entities.Patient.create({ full_name: name });
-                     setFormData(prev => ({ ...prev, patient_id: newPatient.id, patient_name: newPatient.full_name }));
-                   }
-                 }}
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowNewPatient(true)}
+                  title="הוסף מטופל חדש"
                 >
-                 +
+                  <UserPlus className="w-4 h-4" />
                 </Button>
               </div>
             </div>
@@ -253,6 +250,19 @@ export default function AppointmentForm({ appointment, patients, selectedDate, e
         </form>
         </Card>
       </div>
+
+      {showNewPatient && (
+        <PatientForm
+          overlayZClass="z-[60]"
+          onCancel={() => setShowNewPatient(false)}
+          onSubmit={async (patientData) => {
+            const newPatient = await base44.entities.Patient.create(patientData);
+            setFormData(prev => ({ ...prev, patient_id: newPatient.id, patient_name: newPatient.full_name }));
+            setShowNewPatient(false);
+            onPatientCreated?.(newPatient);
+          }}
+        />
+      )}
     </div>
   );
 }

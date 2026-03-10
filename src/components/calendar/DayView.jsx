@@ -2,7 +2,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { format, parseISO, isSameDay } from 'date-fns';
 import { he } from 'date-fns/locale';
-import { Clock, Plus, DollarSign } from 'lucide-react';
+import { Clock, Plus, DollarSign, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { isAppointmentEnded } from '../shared/appointmentUtils';
 
@@ -112,32 +112,34 @@ export default function DayView({ currentDate, appointments, patients, payments,
                       }
                       
                       return (
-                        <div key={apt.id} className="relative group/apt">
-                          <button
-                            onClick={() => onAppointmentClick(apt)}
-                            className={`w-full text-right p-3 rounded-lg ${bgColor} border transition-colors`}
-                          >
-                            <div className="flex items-start justify-between gap-2">
-                              <div>
-                                <div className="font-medium text-gray-800">{apt.patient_name}</div>
-                                <div className="text-sm text-gray-600">
-                                  {apt.time} • {apt.duration} דקות • {apt.type}
-                                </div>
-                              </div>
-                              {!hasPayment && isPastAppointment && !isMonthlyPayer && onMarkAsPaid && (
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    onMarkAsPaid(apt, patient);
-                                  }}
-                                  className="opacity-0 group-hover/apt:opacity-100 transition-opacity p-1 hover:bg-green-100 rounded"
-                                  title="סמן כשולם"
-                                >
-                                  <DollarSign className="w-4 h-4 text-green-600 hover:text-green-700" />
-                                </button>
-                              )}
+                        <div key={apt.id} className={`w-full flex items-center gap-2 p-3 rounded-lg ${bgColor} border`} dir="rtl">
+                          <div className="flex-1 text-right">
+                            <div className="font-medium text-gray-800">{apt.patient_name}</div>
+                            <div className="text-sm text-gray-600">
+                              {apt.time} • {apt.duration} דקות • {apt.type}
                             </div>
-                          </button>
+                          </div>
+                          <div className="flex flex-row gap-1 items-center">
+                            <button onClick={() => onAppointmentClick(apt)} className="text-xs text-blue-600 hover:text-blue-800 px-1">פרטים</button>
+                            {patient?.phone && (
+                              <button
+                                onClick={() => window.open(`https://wa.me/972${patient.phone.replace(/^0/, '')}`, '_blank')}
+                                className="p-1 hover:bg-black/10 rounded"
+                                title="וואטסאפ"
+                              >
+                                <MessageSquare className="w-4 h-4 text-green-600" />
+                              </button>
+                            )}
+                            {!hasPayment && isPastAppointment && !isMonthlyPayer && onMarkAsPaid && apt.status !== 'בוטל' && apt.status !== 'לא הגיע' && (
+                              <button
+                                onClick={() => onMarkAsPaid(apt, patient)}
+                                className="p-1 hover:bg-black/10 rounded"
+                                title="סמן כשולם"
+                              >
+                                <DollarSign className="w-4 h-4 text-green-600" />
+                              </button>
+                            )}
+                          </div>
                         </div>
                       );
                     })

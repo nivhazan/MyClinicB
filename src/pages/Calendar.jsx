@@ -235,6 +235,7 @@ export default function Calendar() {
           selectedDate={selectedDate}
           existingAppointments={appointments}
           onSubmit={handleSubmit}
+          onPatientCreated={() => queryClient.invalidateQueries({ queryKey: ['patients'] })}
           onCancel={() => {
             setShowForm(false);
             setEditingAppointment(null);

@@ -29,7 +29,7 @@ export function useCreatePayment({ onSuccess } = {}) {
           patient_name: payment.patient_name,
           amount: payment.amount,
           payment_date: payment.payment_date
-        }).catch(err => console.error('Failed to send invoice:', err));
+        }).catch(() => {});
       }
 
       return payment;

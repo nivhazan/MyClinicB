@@ -76,13 +76,15 @@ export default function NextUp({
 
             {!isEnded && (
               <p className="text-sm text-gray-500 px-4 py-2">
-                בעוד{' '}
-                {Math.round(
-                  (new Date(`${nextAppointment.date}T${nextAppointment.time}`).getTime() -
-                    now.getTime()) /
-                    (1000 * 60)
-                )}{' '}
-                דקות
+                {(() => {
+                  const diffMin = Math.round(
+                    (new Date(`${nextAppointment.date}T${nextAppointment.time}`).getTime() - now.getTime()) / 60000
+                  );
+                  if (diffMin < 60) return `בעוד ${diffMin} דקות`;
+                  const h = Math.floor(diffMin / 60);
+                  const m = diffMin % 60;
+                  return m > 0 ? `בעוד ${h} שעות ו-${m} דקות` : `בעוד ${h} שעות`;
+                })()}
               </p>
             )}
           </div>
